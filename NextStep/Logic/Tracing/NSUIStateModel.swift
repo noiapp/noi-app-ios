@@ -40,7 +40,7 @@ struct NSUIStateModel: Equatable {
         var encounters: Encounters = Encounters()
         var messages: Messages = Messages()
 
-        var meldungButtonDisabled: Bool = false
+        var messageButtonDisabled: Bool = false
     }
 
     struct Debug: Equatable {
