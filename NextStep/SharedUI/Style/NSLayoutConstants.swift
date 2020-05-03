@@ -6,8 +6,8 @@
 
 import UIKit
 
-class NSPadding {
-    public static let small: CGFloat = 5.0
-    public static let medium: CGFloat = 10.0
-    public static let large: CGFloat = 25.0
+struct NSPadding {
+	static let small: CGFloat = 5.0
+	static let medium: CGFloat = 10.0
+	static let large: CGFloat = 25.0
 }

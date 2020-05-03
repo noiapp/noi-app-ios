@@ -295,7 +295,7 @@
 			isa = PBXGroup;
 			children = (
 				24780AF5242DF7F6003BB26C /* Homescreen */,
-				6EFB097324459B580097BD3D /* BegegnungenDetail */,
+				6EFB097324459B580097BD3D /* EncountersDetail */,
 				6EFB097C2446032D0097BD3D /* Meldungen */,
 				24780AF8242DF813003BB26C /* InformBroadcast */,
 			);
@@ -576,7 +576,7 @@
 			path = SharedUI;
 			sourceTree = "<group>";
 		};
-		6EFB097324459B580097BD3D /* BegegnungenDetail */ = {
+		6EFB097324459B580097BD3D /* EncountersDetail */ = {
 			isa = PBXGroup;
 			children = (
 				6EFB097424459B870097BD3D /* NSEncountersDetailViewController.swift */,
@@ -584,7 +584,7 @@
 				6EFB09782445B2CA0097BD3D /* NSBluetoothSettingsDetailView.swift */,
 				6EFB097A2445C2210097BD3D /* NSPointTextView.swift */,
 			);
-			path = BegegnungenDetail;
+			path = EncountersDetail;
 			sourceTree = "<group>";
 		};
 		6EFB097C2446032D0097BD3D /* Meldungen */ = {

@@ -4,24 +4,21 @@
  * Copyright (c) 2020. All rights reserved.
  */
 
-import CoreBluetooth
-import DP3TSDK
 import SnapKit
 import UIKit
 
-class NSHomescreenViewController: NSViewController {
+final class NSHomescreenViewController: NSViewController {
+	
+	 // MARK: Private properties
     private let stackScrollView = NSStackScrollView()
-
-    let titleView = NSAppTitleView()
-
+    private let titleView = NSAppTitleView()
     private let handshakesModuleView = NSEncountersModuleView()
-    private let meldungView = NSMessagesView()
-
+    private let messageView = NSMessagesView()
     private let informButton = NSButton(title: "inform_button_title".ub_localized, style: .primaryOutline)
     private let debugScreenButton = NSButton(title: "debug_settings_title".ub_localized, style: .outline(.ns_error))
+	private var finishTransitionHandler: (() -> Void)?
 
-    // MARK: - View
-
+    // MARK: Init
     override init() {
         super.init()
 
@@ -32,54 +29,33 @@ class NSHomescreenViewController: NSViewController {
         tabBarItem.image = UIImage(named: "home")
     }
 
-    // MARK: - View
-
+    // MARK: ViewController lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .ns_background_secondary
-
+		
         setupLayout()
-
-        meldungView.touchUpCallback = { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.presentMessagesDetail()
-        }
-
-        NSUIStateManager.shared.addObserver(self, block: updateState(_:))
-
-        handshakesModuleView.touchUpCallback = { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.presentEncountersDetail()
-        }
-
-        informButton.touchUpCallback = { [weak self] in
-            guard let strongSelf = self else { return }
-            NSInformViewController.present(from: strongSelf)
-        }
+		setupCallbacks()
+		NSUIStateManager.shared.addObserver(self, block: updateState(_:))
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
         navigationController?.setNavigationBarHidden(true, animated: true)
-
         NSUIStateManager.shared.refresh()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
 
-        finishTransition?()
-        finishTransition = nil
-
+        finishTransitionHandler?()
+        finishTransitionHandler = nil
         presentOnboardingIfNeeded()
     }
 
-    private var finishTransition: (() -> Void)?
-
-    // MARK: - Setup
-
+    // MARK: SetupViews
     private func setupLayout() {
+		view.backgroundColor = .ns_background_secondary
         view.addSubview(titleView)
         titleView.snp.makeConstraints { make in
             make.left.right.top.equalToSuperview()
@@ -95,13 +71,10 @@ class NSHomescreenViewController: NSViewController {
         }
 
         stackScrollView.scrollView.delegate = titleView
-
         stackScrollView.addSpacerView(180)
-
         stackScrollView.addArrangedView(handshakesModuleView)
         stackScrollView.addSpacerView(NSPadding.large)
-
-        stackScrollView.addArrangedView(meldungView)
+        stackScrollView.addArrangedView(messageView)
         stackScrollView.addSpacerView(NSPadding.large)
 
         let buttonContainer = UIView()
@@ -109,34 +82,31 @@ class NSHomescreenViewController: NSViewController {
         informButton.snp.makeConstraints { make in
             make.top.bottom.centerX.equalToSuperview()
         }
+		
         stackScrollView.addArrangedView(buttonContainer)
         stackScrollView.addSpacerView(NSPadding.large)
 
-        let previewWarning = NSBluetoothSettingsDetailView(title: "preview_warning_title".ub_localized, subText: "preview_warning_text".ub_localized, image: UIImage(named: "ic-error")!, titleColor: .gray, subtextColor: .gray)
+        let previewWarning = NSBluetoothSettingsDetailView(title: "preview_warning_title".ub_localized,
+														   subText: "preview_warning_text".ub_localized,
+														   image: UIImage(named: "ic-error"),
+														   titleColor: .gray,
+														   subtextColor: .gray)
         stackScrollView.addArrangedView(previewWarning)
-
         stackScrollView.addSpacerView(NSPadding.large)
 
         let debugScreenContainer = UIView()
         debugScreenContainer.addSubview(debugScreenButton)
         debugScreenButton.snp.makeConstraints { make in
             make.top.bottom.centerX.equalToSuperview()
-        }
-
-        debugScreenButton.touchUpCallback = { [weak self] in
-            guard let strongSelf = self else { return }
-            strongSelf.presentDebugScreen()
-        }
+		}
 
         stackScrollView.addArrangedView(debugScreenContainer)
-
         stackScrollView.addSpacerView(NSPadding.large)
-
         handshakesModuleView.alpha = 0
-        meldungView.alpha = 0
+        messageView.alpha = 0
         informButton.alpha = 0
 
-        finishTransition = {
+        finishTransitionHandler = {
             UIView.animate(withDuration: 0.8, delay: 0.0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.0, options: [.allowUserInteraction], animations: {
                 self.view.layoutIfNeeded()
             }, completion: nil)
@@ -145,10 +115,10 @@ class NSHomescreenViewController: NSViewController {
                 self.handshakesModuleView.alpha = 1
             }, completion: nil)
             UIView.animate(withDuration: 0.3, delay: 0.5, options: [.allowUserInteraction], animations: {
-                self.meldungView.alpha = 1
+                self.messageView.alpha = 1
             }, completion: nil)
             UIView.animate(withDuration: 0.3, delay: 0.65, options: [.allowUserInteraction], animations: {
-                if NSUIStateManager.shared.uiState.homescreen.meldungButtonDisabled {
+                if NSUIStateManager.shared.uiState.homescreen.messageButtonDisabled {
                     self.informButton.alpha = 0.2
                 } else {
                     self.informButton.alpha = 1.0
@@ -156,13 +126,35 @@ class NSHomescreenViewController: NSViewController {
             }, completion: nil)
         }
     }
+	
+	private func setupCallbacks() {
+		debugScreenButton.touchUpCallback = { [weak self] in
+			guard let strongSelf = self else { return }
+			strongSelf.presentDebugScreen()
+		}
+		
+		messageView.touchUpCallback = { [weak self] in
+			guard let strongSelf = self else { return }
+			strongSelf.presentMessagesDetail()
+		}
+		
+		handshakesModuleView.touchUpCallback = { [weak self] in
+			guard let strongSelf = self else { return }
+			strongSelf.presentEncountersDetail()
+		}
+		
+		informButton.touchUpCallback = { [weak self] in
+			guard let strongSelf = self else { return }
+			NSInformViewController.present(from: strongSelf)
+		}
+	}
 
-    func updateState(_ state: NSUIStateModel) {
+    private func updateState(_ state: NSUIStateModel) {
         titleView.uiState = state.homescreen.header
         handshakesModuleView.uiState = state.homescreen.encounters.tracing
-        meldungView.uiState = state.homescreen.messages
+        messageView.uiState = state.homescreen.messages
 
-        if state.homescreen.meldungButtonDisabled {
+        if state.homescreen.messageButtonDisabled {
             informButton.isEnabled = false
             informButton.alpha = 0.2
         } else {
@@ -170,26 +162,26 @@ class NSHomescreenViewController: NSViewController {
             informButton.alpha = 1.0
         }
     }
+}
 
-    // MARK: - Details
-
-    private func presentEncountersDetail() {
-        navigationController?.pushViewController(NSEncountersDetailViewController(), animated: true)
-    }
-
-    private func presentMessagesDetail() {
-        navigationController?.pushViewController(NSMessagesDetailViewController(), animated: true)
-    }
-
-    private func presentOnboardingIfNeeded() {
-        if !User.shared.hasCompletedOnboarding {
-            let onboardingViewController = NSOnboardingViewController()
-            onboardingViewController.modalPresentationStyle = .fullScreen
-            present(onboardingViewController, animated: false)
-        }
-    }
-
-    private func presentDebugScreen() {
-        navigationController?.pushViewController(NSDebugscreenViewController(), animated: true)
-    }
+// MARK: - Navigation
+extension NSHomescreenViewController {
+	private func presentEncountersDetail() {
+		navigationController?.pushViewController(NSEncountersDetailViewController(), animated: true)
+	}
+	
+	private func presentMessagesDetail() {
+		navigationController?.pushViewController(NSMessagesDetailViewController(), animated: true)
+	}
+	
+	private func presentOnboardingIfNeeded() {
+		guard !User.shared.hasCompletedOnboarding else { return }
+		let onboardingViewController = NSOnboardingViewController()
+		onboardingViewController.modalPresentationStyle = .fullScreen
+		present(onboardingViewController, animated: false)
+	}
+	
+	private func presentDebugScreen() {
+		navigationController?.pushViewController(NSDebugscreenViewController(), animated: true)
+	}
 }

@@ -135,7 +135,7 @@ class NSUIStateManager: NSObject {
             case .healthy:
                 break
             case .infected:
-                newState.homescreen.meldungButtonDisabled = true
+                newState.homescreen.messageButtonDisabled = true
                 newState.homescreen.messages.message = .infected
                 newState.messagesDetail.message = .infected
             case .exposed:
